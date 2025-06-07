@@ -11,9 +11,7 @@ public class TwoFourTree {
         int value1 = 0;                             // always exists.
         int value2 = 0;                             // exists iff the node is a 3-node or 4-node.
         int value3 = 0;                             // exists iff the node is a 4-node.
-        
-        
-        boolean isLeaf = true;
+        boolean isLeaf = true;                      // true if this node is a leaf / has no children.
         
         TwoFourTreeItem parent = null;              // parent exists iff the node is not root.
         TwoFourTreeItem leftChild = null;           // left and right child exist iff the note is a non-leaf.
@@ -40,6 +38,10 @@ public class TwoFourTree {
         // Returns true if this node is the root of the tree.
         // (Currently always returns false; should be updated if root logic is needed.)
         public boolean isRoot() {
+            if(parent == null) {
+                return true; // This node has no parent, so it is the root.
+            }
+            // If the parent is not null, this node is not the root.
             return false;
         }
 
@@ -48,15 +50,114 @@ public class TwoFourTree {
         // and marks the node as a leaf (no children yet).
         public TwoFourTreeItem(int value1) {
             this.value1 = value1;   // Store the value in the node.
-            this.values = 1;        // This node contains one value (2-node).
-            this.isLeaf = true;     // New nodes are leaves by default.
+
         }
 
         public TwoFourTreeItem(int value1, int value2) {
-            
+
+            // Make sure values are not identical.
+            if(value1 == value2) {
+                this.values = 1; // If both values are the same, treat it as a 2-node.
+            }
+
+            // Initialize the node with two values.
+            this.values = 2; // This is a 3-node.
+
+            // Make sure that the values are stored in sorted order.
+            if(value1 < value2) {
+                this.value1 = value1; // Store smaller value
+                this.value2 = value2; // Store larger value
+            } else {
+                this.value1 = value2; // Store smaller value
+                this.value2 = value1; // Store larger value
+            }
+
+            // New nodes are leafs by default.
+            this.isLeaf = true; // it has no children yet.
+
         }
 
         public TwoFourTreeItem(int value1, int value2, int value3) {
+
+            // Case 1: If all values are the same, treat it as a 2-node.
+            if(value1 == value2 && value1 == value3) {
+                this.values = 1; // This is a 2-node.
+                this.value1 = value1; // Store the single value.
+            }
+
+            // Case 2: value1 is equal to value2, but not value3
+            else if(value1 == value2 && value1 != value3) {
+                this.values = 2; // This is a 3-node.
+                if(value1 < value3) {
+                    this.value1 = value1; // Store smaller value
+                    this.value2 = value3; // Store larger value
+                } else {
+                    this.value1 = value3; // Store smaller value
+                    this.value2 = value1; // Store larger value
+                }
+
+            // Case 3: value1 is equal to value3, but not value2
+            } else if(value1 == value3 && value1 != value2) {
+                this.values = 2; // This is a 3-node.
+                if(value1 < value2) {
+                    this.value1 = value1; // Store smaller value
+                    this.value2 = value2; // Store larger value
+                } else {
+                    this.value1 = value2; // Store smaller value
+                    this.value2 = value1; // Store larger value
+                }
+
+            // Case 4: value2 is equal to value3, but not value1
+            } else if(value2 == value3 && value1 != value2) {
+                this.values = 2; // This is a 3-node.
+                if(value1 < value2) {
+                    this.value1 = value1; // Store smaller value
+                    this.value2 = value2; // Store larger value
+                } else {
+                    this.value1 = value2; // Store smaller value
+                    this.value2 = value1; // Store larger value    
+                }
+            }
+
+            // If none of the values are equal, store them in sorted order.
+            if(value1 < value2 && value1 < value3) {
+                // value1 is the smallest
+                this.values = 3; // This is a 4-node.
+                this.value1 = value1; // Store smallest value
+                // Determine the second smallest and largest values.
+                if(value2 < value3) {
+                    this.value2 = value2; // second smallest value
+                    this.value3 = value3; // largest value
+                } else {
+                    this.value2 = value3; // second smallest value
+                    this.value3 = value2; // largest value   
+                }
+            }
+            else if(value2 < value1 && value2 < value3) {
+                // value2 is the smallest value.
+                this.values = 3; // This is a 4-node.
+                this.value1 = value2; // Store smallest value
+                // Determine the second smallest and largest values.
+                if(value1 < value3) {
+                    this.value2 = value1; // second smallest value
+                    this.value3 = value3; // largest value
+                } else {
+                    this.value2 = value3; // second smallest value
+                    this.value3 = value1; // largest value   
+                }
+            } else { 
+                // value3 is the smallest value.
+                this.values = 3; // This is a 4-node.
+                this.value1 = value3; // Store smallest value
+                // Determine the second smallest and largest values.
+                if(value1 < value2) {
+                    this.value2 = value1; // second smallest value
+                    this.value3 = value2; // largest value
+                } else {
+                    this.value2 = value2; // second smallest value
+                    this.value3 = value1; // largest value   
+                }
+            }
             
         }
 
@@ -133,7 +234,7 @@ public class TwoFourTree {
     public boolean deleteValue(int value) {
         return false;
     }
-
+  
     public void printInOrder() {
         if(root != null) root.printInOrder(0);
     }
