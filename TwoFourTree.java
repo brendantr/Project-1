@@ -119,6 +119,7 @@ public class TwoFourTree {
                 }
             }
 
+            // Case 5: All values are different.
             // If none of the values are equal, store them in sorted order.
             if(value1 < value2 && value1 < value3) {
                 // value1 is the smallest
@@ -133,8 +134,8 @@ public class TwoFourTree {
                     this.value3 = value2; // largest value   
                 }
             }
+            // value2 is the smallest value.
             else if(value2 < value1 && value2 < value3) {
-                // value2 is the smallest value.
                 this.values = 3; // This is a 4-node.
                 this.value1 = value2; // Store smallest value
                 // Determine the second smallest and largest values.
@@ -145,8 +146,9 @@ public class TwoFourTree {
                     this.value2 = value3; // second smallest value
                     this.value3 = value1; // largest value   
                 }
-            } else { 
-                // value3 is the smallest value.
+            } 
+            // value3 is the smallest value.
+            else {
                 this.values = 3; // This is a 4-node.
                 this.value1 = value3; // Store smallest value
                 // Determine the second smallest and largest values.
@@ -188,25 +190,34 @@ public class TwoFourTree {
     TwoFourTreeItem root = null;
 
     public boolean addValue(int value) {
-        // If the tree is empty, create a root node with the value.
-        if (root == null) {
-            root = new TwoFourTreeItem(value);
+
+        // Check if tree is empty
+        if (root == null) { 
+            root = new TwoFourTreeItem(value);  // create root node with value.
             return true;
         }
-        // If the root is a 2-node and a leaf, add the value to it.
+
+        // Check If the root is a 2-node and a leaf, add the value to it.
         if (root.isTwoNode() && root.isLeaf) {
-            // Insert in sorted order
-            if (value == root.value1) return false; // no duplicates
+
+            // Check for identical values
+            if (value == root.value1)
+                return false; // we do not want identical values
+
+            // Check the new value against the old value
             if (value < root.value1) {
+                // Insert in sorted order
                 root.value2 = root.value1;
                 root.value1 = value;
             } else {
                 root.value2 = value;
             }
+            // Update the number of values in the node
             root.values = 2;
             return true;
         }
-        // If the root is a 3-node and a leaf, add the value to it.
+        
+        // Check If the root is a 3-node and a leaf, add the value to it.
         if (root.isThreeNode() && root.isLeaf) {
             // Insert in sorted order
             if (value == root.value1 || value == root.value2) return false; // no duplicates
@@ -223,16 +234,109 @@ public class TwoFourTree {
             root.values = 3;
             return true;
         }
+        // If root is a 4-node leaf, it needs to split
+        if (root.isFourNode() && root.isLeaf) {
+            // Check for duplicates first
+            if (value == root.value1 || value == root.value2 || value == root.value3) {
+                return false; // no duplicates
+            }
+            
+            splitRootFourNode(value);
+            return true;
+        }
+
+        // Handle case where root has children (multi-level tree)
+        if (!root.isLeaf) {
+            return insertIntoTree(value);
+        }
+
         // TODO: Handle more complex cases (splitting, multi-level insert)
         return false;
     }
 
     public boolean hasValue(int value) {
+
+        // Check if the tree is empty
+        if (root == null) {
+            return false; // Tree is empty, no values present.
+        }
+        
+        // Start searching from the root
+        TwoFourTreeItem currentNode = root;
+
+        while (currentNode != null) {
+            // Check if the value is in the current node    
+            if (currentNode.value1 == value) {
+                return true; // Value found in the current node.
+            } 
+            if (currentNode.values >= 2 && currentNode.value2 == value) {
+                return true; // Value found in the current node.
+            }
+            if (currentNode.values >= 3 && currentNode.value3 == value) {
+                return true; // Value found in the current node.
+            }
+        
+            // If not found in current node, navigate to appropriate child
+            if (currentNode.isLeaf) {
+                return false; // Reached a leaf, value not found
+            }
+            
+            // Navigate to the correct child based on value
+            if (value < currentNode.value1) {
+                currentNode = currentNode.leftChild;
+            } else if (currentNode.values == 1) {
+                // 2-node: only leftChild and rightChild exist
+                currentNode = currentNode.rightChild;
+            } else if (value < currentNode.value2) {
+                // 3-node or 4-node: go to center child
+                currentNode = currentNode.centerChild;
+            } else if (currentNode.values == 2) {
+                // 3-node: go to rightChild
+                currentNode = currentNode.rightChild;
+            } else if (value < currentNode.value3) {
+                // 4-node: go to centerRightChild
+                currentNode = currentNode.centerRightChild;
+            } else {
+                // 4-node: go to rightChild
+                currentNode = currentNode.rightChild;
+            }
+        }
+        
         return false;
     }
 
     public boolean deleteValue(int value) {
         return false;
+    }
+
+    private void splitRootFourNode(int newValue) {
+        // Current root is 4-node: [value1, value2, value3]
+        // We need to add newValue and split into 2 nodes with middle promoted
+        
+        // Step 1: Collect all 4 values and sort them
+        int[] allValues = {root.value1, root.value2, root.value3, newValue};
+        java.util.Arrays.sort(allValues);
+        
+        // Step 2: Create new tree structure
+        // allValues[0], allValues[1] | allValues[2] | allValues[3]
+        //     left 2-node         middle    right 2-node
+    
+        TwoFourTreeItem leftChild = new TwoFourTreeItem(allValues[0], allValues[1]);
+        TwoFourTreeItem rightChild = new TwoFourTreeItem(allValues[3]);
+        
+        // Step 3: Create new root with middle value
+        root = new TwoFourTreeItem(allValues[2]);
+        root.isLeaf = false;  // Root now has children
+        root.leftChild = leftChild;
+        root.rightChild = rightChild;
+        
+        // Step 4: Set parent pointers
+        leftChild.parent = root;
+        rightChild.parent = root;
+        
+        System.out.println("DEBUG: Split complete! New root: " + root.value1 + 
+                          " Left: [" + leftChild.value1 + "," + leftChild.value2 + "]" +
+                          " Right: [" + rightChild.value1 + "]");
     }
   
     public void printInOrder() {
@@ -241,5 +345,69 @@ public class TwoFourTree {
 
     public TwoFourTree() {
 
+    }
+
+    private boolean insertIntoTree(int value) {
+        // Find the correct leaf node for insertion
+        TwoFourTreeItem current = root;
+        
+        // Navigate to leaf
+        while (!current.isLeaf) {
+            // Use same navigation logic as hasValue()
+            if (value < current.value1) {
+                current = current.leftChild;
+            } else if (current.values == 1) {
+                current = current.rightChild;
+            } else if (value < current.value2) {
+                current = current.centerChild;
+            } else if (current.values == 2) {
+                current = current.rightChild;
+            } else if (value < current.value3) {
+                current = current.centerRightChild;
+            } else {
+                current = current.rightChild;
+            }
+        }
+        
+        // Now insert into the leaf (reuse existing leaf logic)
+        // Check for duplicates first
+        if (current.values >= 1 && value == current.value1) return false;
+        if (current.values >= 2 && value == current.value2) return false;
+        if (current.values >= 3 && value == current.value3) return false;
+
+        // Insert based on current node type
+        if (current.isTwoNode()) {
+            // Convert 2-node to 3-node
+            if (value < current.value1) {
+                current.value2 = current.value1;
+                current.value1 = value;
+            } else {
+                current.value2 = value;
+            }
+            current.values = 2;
+            return true;
+            
+        } else if (current.isThreeNode()) {
+            // Convert 3-node to 4-node
+            if (value < current.value1) {
+                current.value3 = current.value2;
+                current.value2 = current.value1;
+                current.value1 = value;
+            } else if (value < current.value2) {
+                current.value3 = current.value2;
+                current.value2 = value;
+            } else {
+                current.value3 = value;
+            }
+            current.values = 3;
+            return true;
+            
+        } else if (current.isFourNode()) {
+            // 4-node needs to split - this is complex, for now return false
+            System.out.println("DEBUG: Found 4-node leaf - splitting not implemented yet");
+            return false;
+        }
+
+        return false;
     }
 }
