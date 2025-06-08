@@ -168,22 +168,22 @@ public class TwoFourTree {
         }
 
         public void printInOrder(int indent) {
-            if(!isLeaf) leftChild.printInOrder(indent + 1);
+            if(!isLeaf && leftChild != null) leftChild.printInOrder(indent + 1);
             printIndents(indent);
             System.out.printf("%d\n", value1);
             if(isThreeNode()) {
-                if(!isLeaf) centerChild.printInOrder(indent + 1);
+                if(!isLeaf && centerChild != null) centerChild.printInOrder(indent + 1);
                 printIndents(indent);
                 System.out.printf("%d\n", value2);
             } else if(isFourNode()) {
-                if(!isLeaf) centerLeftChild.printInOrder(indent + 1);
+                if(!isLeaf && centerLeftChild != null) centerLeftChild.printInOrder(indent + 1);
                 printIndents(indent);
                 System.out.printf("%d\n", value2);
-                if(!isLeaf) centerRightChild.printInOrder(indent + 1);
+                if(!isLeaf && centerRightChild != null) centerRightChild.printInOrder(indent + 1);
                 printIndents(indent);
                 System.out.printf("%d\n", value3);
             }
-            if(!isLeaf) rightChild.printInOrder(indent + 1);
+            if(!isLeaf && rightChild != null) rightChild.printInOrder(indent + 1);
         }
     }
 
@@ -306,7 +306,23 @@ public class TwoFourTree {
     }
 
     public boolean deleteValue(int value) {
-        return false;
+        // Check if tree is empty
+        if (root == null) {
+            return false;
+        }
+        
+        // Find the node containing the value
+        TwoFourTreeItem nodeToDelete = findNodeContaining(value);
+        if (nodeToDelete == null) {
+            return false; // Value not found
+        }
+        
+        // Handle different deletion cases
+        if (nodeToDelete.isLeaf) {
+            return deleteFromLeaf(nodeToDelete, value);
+        } else {
+            return deleteFromInternalNode(nodeToDelete, value);
+        }
     }
 
     private void splitRootFourNode(int newValue) {
@@ -334,9 +350,9 @@ public class TwoFourTree {
         leftChild.parent = root;
         rightChild.parent = root;
         
-        System.out.println("DEBUG: Split complete! New root: " + root.value1 + 
-                          " Left: [" + leftChild.value1 + "," + leftChild.value2 + "]" +
-                          " Right: [" + rightChild.value1 + "]");
+        // System.out.println("DEBUG: Split complete! New root: " + root.value1 + 
+                          // " Left: [" + leftChild.value1 + "," + leftChild.value2 + "]" +
+                          // " Right: [" + rightChild.value1 + "]");
     }
   
     public void printInOrder() {
@@ -403,11 +419,364 @@ public class TwoFourTree {
             return true;
             
         } else if (current.isFourNode()) {
-            // 4-node needs to split - this is complex, for now return false
-            System.out.println("DEBUG: Found 4-node leaf - splitting not implemented yet");
-            return false;
+            // 4-node leaf needs to split
+            return splitLeafFourNode(current, value);
         }
 
+        return false;
+    }
+
+    private boolean splitLeafFourNode(TwoFourTreeItem leafNode, int newValue) {
+        // Step 1: Collect all 4 values and sort them
+        int[] allValues = {leafNode.value1, leafNode.value2, leafNode.value3, newValue};
+        java.util.Arrays.sort(allValues);
+        
+        // Step 2: Split into: [allValues[0]] | allValues[1] | [allValues[2], allValues[3]]
+        //                     left 2-node    promote   right 2-node
+    
+        TwoFourTreeItem leftNode = new TwoFourTreeItem(allValues[0]);
+        TwoFourTreeItem rightNode = new TwoFourTreeItem(allValues[2], allValues[3]);
+        int promoteValue = allValues[1];
+    
+        // Step 3: Set parent pointers
+        leftNode.parent = leafNode.parent;
+        rightNode.parent = leafNode.parent;
+    
+        // Step 4: Try to insert promote value into parent
+        TwoFourTreeItem parent = leafNode.parent;
+    
+        if (parent.isTwoNode()) {
+            // Parent can absorb the promoted value
+            insertValueIntoParent(parent, promoteValue, leftNode, rightNode, leafNode);
+            return true;
+        } else if (parent.isThreeNode()) {
+            // Parent can absorb the promoted value  
+            insertValueIntoParent(parent, promoteValue, leftNode, rightNode, leafNode);
+            return true;
+        } else {
+            // Parent is 4-node - would need recursive splitting
+            // System.out.println("DEBUG: Parent is 4-node - recursive splitting not implemented yet");
+            return false;
+        }
+    }
+
+    private void insertValueIntoParent(TwoFourTreeItem parent, int promoteValue, 
+                                 TwoFourTreeItem leftChild, TwoFourTreeItem rightChild, 
+                                 TwoFourTreeItem oldChild) {
+        // Find where oldChild was in parent's children and replace with leftChild/rightChild
+    
+        if (parent.leftChild == oldChild) {
+            // Splitting leftmost child
+            parent.leftChild = leftChild;
+            if (parent.isTwoNode()) {
+                // Insert promoteValue as value1, shift existing value
+                parent.value2 = parent.value1;
+                parent.value1 = promoteValue;
+                parent.values = 2;
+                parent.centerChild = rightChild;
+            } else {
+                // Parent is 3-node, becomes 4-node
+                parent.value3 = parent.value2;
+                parent.value2 = parent.value1;
+                parent.value1 = promoteValue;
+                parent.values = 3;
+                parent.centerRightChild = parent.centerChild;
+                parent.centerLeftChild = rightChild;
+            }
+        } else if (parent.rightChild == oldChild) {
+            // Splitting rightmost child
+            parent.rightChild = rightChild;
+            if (parent.isTwoNode()) {
+                parent.value2 = promoteValue;
+                parent.values = 2;
+                parent.centerChild = leftChild;
+            } else {
+                parent.value3 = promoteValue;
+                parent.values = 3;
+                parent.centerRightChild = leftChild;
+            }
+        } else if (parent.centerChild == oldChild) {
+            // Splitting center child (3-node parent only)
+            parent.value3 = parent.value2;
+            parent.value2 = promoteValue;
+            parent.values = 3;
+            parent.centerLeftChild = leftChild;
+            parent.centerRightChild = rightChild;
+            parent.centerChild = null;
+        }
+
+        // System.out.println("DEBUG: Successfully split leaf and promoted value " + promoteValue + " to parent");
+    }
+
+    private TwoFourTreeItem findNodeContaining(int value) {
+        TwoFourTreeItem current = root;
+        
+        while (current != null) {
+            // Check if value is in current node
+            if (current.value1 == value || 
+                (current.values >= 2 && current.value2 == value) ||
+                (current.values >= 3 && current.value3 == value)) {
+                return current;
+            }
+            
+            // Navigate to appropriate child
+            if (current.isLeaf) {
+                return null; // Value not found
+            }
+            
+            // Use same navigation logic as hasValue
+            if (value < current.value1) {
+                current = current.leftChild;
+            } else if (current.values == 1) {
+                current = current.rightChild;
+            } else if (value < current.value2) {
+                current = current.centerChild;
+            } else if (current.values == 2) {
+                current = current.rightChild;
+            } else if (value < current.value3) {
+                current = current.centerRightChild;
+            } else {
+                current = current.rightChild;
+            }
+        }
+        
+        return null;
+    }
+
+    private boolean deleteFromLeaf(TwoFourTreeItem node, int value) {
+        // Simple case: delete from leaf node
+        if (node.isTwoNode()) {
+            // Special case: if this is the root, we can delete it
+            if (node.isRoot()) {
+                root = null; // Tree becomes empty
+                return true;
+            }
+            
+            // 2-node leaf underflow - try to borrow or merge
+            return handleUnderflow(node, value);
+            
+        } else if (node.isThreeNode()) {
+            // Delete from 3-node → becomes 2-node
+            removeValueFromNode(node, value);
+            node.values = 1;
+            return true;
+        } else { // 4-node
+            // Delete from 4-node → becomes 3-node
+            removeValueFromNode(node, value);
+            node.values = 2;
+            return true;
+        }
+    }
+
+    private boolean deleteFromInternalNode(TwoFourTreeItem node, int value) {
+        // Find which value to delete and replace with successor
+        TwoFourTreeItem successor;
+        int successorValue;
+        
+        if (node.value1 == value) {
+            // Replace value1 with its inorder successor
+            successor = findMinInSubtree(node.leftChild);
+            successorValue = successor.value1;
+            node.value1 = successorValue;
+            return deleteFromLeaf(successor, successorValue);
+        } else if (node.values >= 2 && node.value2 == value) {
+            // Replace value2 with its inorder successor  
+            successor = findMinInSubtree(node.centerChild);
+            successorValue = successor.value1;
+            node.value2 = successorValue;
+            return deleteFromLeaf(successor, successorValue);
+        } else if (node.values >= 3 && node.value3 == value) {
+            // Replace value3 with its inorder successor
+            successor = findMinInSubtree(node.centerRightChild);
+            successorValue = successor.value1;
+            node.value3 = successorValue;
+            return deleteFromLeaf(successor, successorValue);
+        }
+        
+        return false;
+    }
+
+    private TwoFourTreeItem findMinInSubtree(TwoFourTreeItem node) {
+        // Find the leftmost (minimum) node in subtree
+        while (!node.isLeaf) {
+            node = node.leftChild;
+        }
+        return node;
+    }
+
+    private void removeValueFromNode(TwoFourTreeItem node, int value) {
+        // Remove value and shift remaining values left
+        if (node.value1 == value) {
+            node.value1 = node.value2;
+            node.value2 = node.value3;
+            node.value3 = 0;
+        } else if (node.values >= 2 && node.value2 == value) {
+            node.value2 = node.value3;
+            node.value3 = 0;
+        } else if (node.values >= 3 && node.value3 == value) {
+            node.value3 = 0;
+        }
+    }
+    
+    private boolean handleUnderflow(TwoFourTreeItem node, int value) {
+    TwoFourTreeItem parent = node.parent;
+    
+    // Try to borrow from left sibling
+    TwoFourTreeItem leftSibling = findLeftSibling(node);
+    if (leftSibling != null && leftSibling.values > 1) {
+        borrowFromLeftSibling(node, leftSibling, value);
+        return true;
+    }
+    
+    // Try to borrow from right sibling
+    TwoFourTreeItem rightSibling = findRightSibling(node);
+    if (rightSibling != null && rightSibling.values > 1) {
+        borrowFromRightSibling(node, rightSibling, value);
+        return true;
+    }
+    
+    // Can't borrow - must merge
+    if (leftSibling != null) {
+        return mergeWithLeftSibling(node, leftSibling, value);
+    } else if (rightSibling != null) {
+        return mergeWithRightSibling(node, rightSibling, value);
+    }
+    
+    // Should never reach here in a valid tree
+    return false;
+}
+
+    private TwoFourTreeItem findLeftSibling(TwoFourTreeItem node) {
+        TwoFourTreeItem parent = node.parent;
+        if (parent == null) return null;
+        
+        if (parent.rightChild == node) {
+            return parent.leftChild;
+        } else if (parent.centerChild == node) {
+            return parent.leftChild;
+        } else if (parent.centerRightChild == node) {
+            return parent.centerLeftChild;
+        }
+        
+        return null; // node is leftmost child
+    }
+
+    private TwoFourTreeItem findRightSibling(TwoFourTreeItem node) {
+        TwoFourTreeItem parent = node.parent;
+        if (parent == null) return null;
+        
+        if (parent.leftChild == node) {
+            return parent.centerChild != null ? parent.centerChild : parent.rightChild;
+        } else if (parent.centerChild == node) {
+            return parent.rightChild;
+        } else if (parent.centerLeftChild == node) {
+            return parent.centerRightChild;
+        }
+        
+        return null; // node is rightmost child
+    }
+
+    private void borrowFromLeftSibling(TwoFourTreeItem node, TwoFourTreeItem leftSibling, int value) {
+        // Remove value from current node first
+        removeValueFromNode(node, value);
+        
+        // Move largest value from left sibling through parent to current node
+        TwoFourTreeItem parent = node.parent;
+        int borrowedValue;
+        
+        if (leftSibling.isFourNode()) {
+            borrowedValue = leftSibling.value3;
+            leftSibling.value3 = 0;
+            leftSibling.values = 2;
+        } else if (leftSibling.isThreeNode()) {
+            borrowedValue = leftSibling.value2;
+            leftSibling.value2 = 0;
+            leftSibling.values = 1;
+        } else {
+            return; // Can't borrow from 2-node
+        }
+        
+        // Find which parent value to rotate
+        if (parent.leftChild == leftSibling && parent.rightChild == node) {
+            // Simple 2-node parent case
+            node.value1 = parent.value1;
+            parent.value1 = borrowedValue;
+        }
+        // Add more complex cases as needed...
+    }
+
+    private void borrowFromRightSibling(TwoFourTreeItem node, TwoFourTreeItem rightSibling, int value) {
+        // Remove value from current node first
+        removeValueFromNode(node, value);
+        
+        // Move smallest value from right sibling through parent to current node
+        TwoFourTreeItem parent = node.parent;
+        int borrowedValue = rightSibling.value1;
+        
+        // Remove borrowed value from right sibling
+        rightSibling.value1 = rightSibling.value2;
+        rightSibling.value2 = rightSibling.value3;
+        rightSibling.value3 = 0;
+        rightSibling.values--;
+        
+        // Rotate through parent (simplified for 2-node parent)
+        if (parent.leftChild == node && parent.rightChild == rightSibling) {
+            node.value1 = parent.value1;
+            parent.value1 = borrowedValue;
+        }
+    }
+
+    private boolean mergeWithLeftSibling(TwoFourTreeItem node, TwoFourTreeItem leftSibling, int value) {
+        // Remove value from node first
+        removeValueFromNode(node, value);
+        
+        // Simple merge for 2-node case
+        TwoFourTreeItem parent = node.parent;
+        
+        if (parent.isTwoNode() && parent.leftChild == leftSibling && parent.rightChild == node) {
+            // Merge: leftSibling + parent.value1 becomes a 2-node
+            leftSibling.value2 = parent.value1;
+            leftSibling.values = 2;
+            
+            // Update parent to point only to merged node
+            parent.leftChild = leftSibling;
+            parent.rightChild = null;
+            
+            // If parent becomes empty, make leftSibling the new root
+            if (parent.isRoot()) {
+                root = leftSibling;
+                leftSibling.parent = null;
+            }
+            
+            return true;
+        }
+        
+        return false; // More complex cases not implemented
+    }
+
+    private boolean mergeWithRightSibling(TwoFourTreeItem node, TwoFourTreeItem rightSibling, int value) {
+        // Similar to mergeWithLeftSibling but in reverse
+        removeValueFromNode(node, value);
+        
+        TwoFourTreeItem parent = node.parent;
+        
+        if (parent.isTwoNode() && parent.leftChild == node && parent.rightChild == rightSibling) {
+            // Merge: node.value + parent.value1 + rightSibling becomes a 2-node
+            rightSibling.value2 = rightSibling.value1;
+            rightSibling.value1 = parent.value1;
+            rightSibling.values = 2;
+            
+            parent.leftChild = rightSibling;
+            parent.rightChild = null;
+            
+            if (parent.isRoot()) {
+                root = rightSibling;
+                rightSibling.parent = null;
+            }
+            
+            return true;
+        }
+        
         return false;
     }
 }
