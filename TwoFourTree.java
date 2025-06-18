@@ -2,11 +2,7 @@ public class TwoFourTree {
     
     private class TwoFourTreeItem {
         
-        // The number of values in this node.
-        // A 2-node has 1 value, a 3-node has 2 values, and a 4-node has 3 values.
-        // The values are stored in sorted order.
-        // value1 is always the smallest, value2 is the second smallest, and value3 is the largest.
-        // value2 and value3 only exist if the node is a 3-node or 4-node, respectively.
+        // values in the node
         int values = 1;
         int value1 = 0;                             // always exists.
         int value2 = 0;                             // exists iff the node is a 3-node or 4-node.
@@ -19,40 +15,38 @@ public class TwoFourTree {
         TwoFourTreeItem centerChild = null;         // center child exists iff the node is a non-leaf 3-node.
         TwoFourTreeItem centerLeftChild = null;     // center-left and center-right children exist iff the node is a non-leaf 4-node.
         TwoFourTreeItem centerRightChild = null;
-
-        // Returns true if this node is a 2-node (contains 1 value).
+        
+        // Returns true; 2-node type (node with a single value).
         public boolean isTwoNode() {
             return values == 1;
         }
 
-        // Returns true if this node is a 3-node (contains 2 values).
+        // Returns true; 3-node type (node with two values).
         public boolean isThreeNode() {
             return values == 2;
         }
 
-        // Returns true if this node is a 4-node (contains 3 values).
+        // Returns true; 4-node type (node with three values).
         public boolean isFourNode() {
             return values == 3;
         }
 
         // Returns true if this node is the root of the tree.
-        // (Currently always returns false; should be updated if root logic is needed.)
         public boolean isRoot() {
+            // Check if there is no parent; if so, this node is the root.
             if(parent == null) {
-                return true; // This node has no parent, so it is the root.
+                return true;
             }
-            // If the parent is not null, this node is not the root.
+            // If a parent exists, this node is not the root.
             return false;
+        }
+        
+        // Constructor for a 2-node (node with a single value).
+        public TwoFourTreeItem(int value1) {
+            this.value1 = value1;   // Store the value in the node.
         }
 
         // Constructor for a 2-node (node with a single value).
-        // Initializes the node with the given value, sets the value count to 1,
-        // and marks the node as a leaf (no children yet).
-        public TwoFourTreeItem(int value1) {
-            this.value1 = value1;   // Store the value in the node.
-
-        }
-
         public TwoFourTreeItem(int value1, int value2) {
 
             // Make sure values are not identical.
@@ -194,7 +188,7 @@ public class TwoFourTree {
         // Check if tree is empty
         if (root == null) { 
             root = new TwoFourTreeItem(value);  // create root node with value.
-            return true;
+            return true;    // successfully added value to the tree.
         }
 
         // Check If the root is a 2-node and a leaf, add the value to it.
@@ -241,6 +235,9 @@ public class TwoFourTree {
                 return false; // no duplicates
             }
             
+
+
+
             splitRootFourNode(value);
             return true;
         }
@@ -431,12 +428,11 @@ public class TwoFourTree {
         int[] allValues = {leafNode.value1, leafNode.value2, leafNode.value3, newValue};
         java.util.Arrays.sort(allValues);
         
-        // Step 2: Split into: [allValues[0]] | allValues[1] | [allValues[2], allValues[3]]
-        //                     left 2-node    promote   right 2-node
-    
+        // Step 2: Split the 4-node into two 2-nodes and promote middle value
+        // Create new nodes for left and right children
         TwoFourTreeItem leftNode = new TwoFourTreeItem(allValues[0]);
         TwoFourTreeItem rightNode = new TwoFourTreeItem(allValues[2], allValues[3]);
-        int promoteValue = allValues[1];
+        int promoteValue = allValues[1]; // This is the value to promote to parent 1 
     
         // Step 3: Set parent pointers
         leftNode.parent = leafNode.parent;
@@ -779,4 +775,79 @@ public class TwoFourTree {
         
         return false;
     }
+
+    private TwoFourTreeItem getNextChild(TwoFourTreeItem node, int value) {
+        if (value < node.value1) {
+            return node.leftChild;
+        } else if (node.values == 1) {
+            return node.rightChild;
+        } else if (value < node.value2) {
+            return node.centerChild;
+        } else if (node.values == 2) {
+            return node.rightChild;
+        } else if (value < node.value3) {
+            return node.centerRightChild;
+        } else {
+            return node.rightChild;
+        }
+    }
+
+    private void preemptiveSplitPath(int value) {
+        TwoFourTreeItem current = root;
+        
+        // Walk down the tree and split any 4-nodes we encounter
+        while (current != null && !current.isLeaf) {
+            // Determine which child to visit next
+            TwoFourTreeItem nextChild = getNextChild(current, value);
+            
+            // If the next child is a 4-node, split it before descending
+            if (nextChild != null && nextChild.isFourNode()) {
+                System.out.println("DEBUG: Found 4-node on path, splitting before descent");
+                splitNonRootFourNode(nextChild);
+                // After splitting, tree structure changed, so continue from current position
+                continue; // Re-navigate from current node
+            }
+            
+            // Move to next level
+            current = nextChild;
+        }
+    }
+
+    private void splitNonRootFourNode(TwoFourTreeItem fourNode) {
+    System.out.println("DEBUG: Splitting non-root 4-node with values: " + fourNode.value1 + ", " + fourNode.value2 + ", " + fourNode.value3);
+    
+    // Step 1: Get the middle value to promote
+    int promoteValue = fourNode.value2;
+    
+    // Step 2: Create left and right nodes from split
+    TwoFourTreeItem leftNode = new TwoFourTreeItem(fourNode.value1);
+    TwoFourTreeItem rightNode = new TwoFourTreeItem(fourNode.value3);
+    
+    // Step 3: Handle children if this is not a leaf
+    if (!fourNode.isLeaf) {
+        leftNode.isLeaf = false;
+        rightNode.isLeaf = false;
+        
+        // Redistribute children
+        leftNode.leftChild = fourNode.leftChild;
+        leftNode.rightChild = fourNode.centerLeftChild;
+        rightNode.leftChild = fourNode.centerRightChild;
+        rightNode.rightChild = fourNode.rightChild;
+        
+        // Update parent pointers
+        if (leftNode.leftChild != null) leftNode.leftChild.parent = leftNode;
+        if (leftNode.rightChild != null) leftNode.rightChild.parent = leftNode;
+        if (rightNode.leftChild != null) rightNode.leftChild.parent = rightNode;
+        if (rightNode.rightChild != null) rightNode.rightChild.parent = rightNode;
+    }
+    
+    // Step 4: Insert promoted value into parent (guaranteed to have space!)
+    TwoFourTreeItem parent = fourNode.parent;
+    leftNode.parent = parent;
+    rightNode.parent = parent;
+    
+    insertValueIntoParent(parent, promoteValue, leftNode, rightNode, fourNode);
+    
+    System.out.println("DEBUG: Successfully split 4-node, promoted " + promoteValue + " to parent");
+}
 }
