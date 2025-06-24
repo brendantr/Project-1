@@ -1,13 +1,16 @@
+// Brendan Thomas Rodriguez
+// COP 3503 - Professor Gerber
+// Project 1: Two-Four Tree Implementation
+// Date: 2025-06-20
+
 public class TwoFourTree {
-    
     private class TwoFourTreeItem {
         
-        // values in the node
         int values = 1;
         int value1 = 0;                             // always exists.
         int value2 = 0;                             // exists iff the node is a 3-node or 4-node.
         int value3 = 0;                             // exists iff the node is a 4-node.
-        boolean isLeaf = true;                      // true if this node is a leaf / has no children.
+        boolean isLeaf = true;
         
         TwoFourTreeItem parent = null;              // parent exists iff the node is not root.
         TwoFourTreeItem leftChild = null;           // left and right child exist iff the note is a non-leaf.
@@ -16,151 +19,49 @@ public class TwoFourTree {
         TwoFourTreeItem centerLeftChild = null;     // center-left and center-right children exist iff the node is a non-leaf 4-node.
         TwoFourTreeItem centerRightChild = null;
         
-        // Returns true; 2-node type (node with a single value).
+        // Methods to determine the type of node.        
         public boolean isTwoNode() {
             return values == 1;
         }
 
-        // Returns true; 3-node type (node with two values).
         public boolean isThreeNode() {
             return values == 2;
         }
 
-        // Returns true; 4-node type (node with three values).
         public boolean isFourNode() {
             return values == 3;
         }
 
-        // Returns true if this node is the root of the tree.
         public boolean isRoot() {
-            // Check if there is no parent; if so, this node is the root.
-            if(parent == null) {
-                return true;
-            }
-            // If a parent exists, this node is not the root.
-            return false;
+            return (parent == null); 
         }
-        
-        // Constructor for a 2-node (node with a single value).
+
+        // Constructores for the different types of nodes.    
         public TwoFourTreeItem(int value1) {
             this.value1 = value1;   // Store the value in the node.
         }
 
-        // Constructor for a 2-node (node with a single value).
-        public TwoFourTreeItem(int value1, int value2) {
+        public TwoFourTreeItem(int value1, int value2){
 
-            // Make sure values are not identical.
-            if(value1 == value2) {
-                this.values = 1; // If both values are the same, treat it as a 2-node.
+            values = 3;
+
+            if(value1 < value2 && value1 < value3){
+                this.value1 = value1;
+
+
+                
             }
 
-            // Initialize the node with two values.
-            this.values = 2; // This is a 3-node.
 
-            // Make sure that the values are stored in sorted order.
-            if(value1 < value2) {
-                this.value1 = value1; // Store smaller value
-                this.value2 = value2; // Store larger value
-            } else {
-                this.value1 = value2; // Store smaller value
-                this.value2 = value1; // Store larger value
-            }
-
-            // New nodes are leafs by default.
-            this.isLeaf = true; // it has no children yet.
 
         }
 
-        public TwoFourTreeItem(int value1, int value2, int value3) {
-
-            // Case 1: If all values are the same, treat it as a 2-node.
-            if(value1 == value2 && value1 == value3) {
-                this.values = 1; // This is a 2-node.
-                this.value1 = value1; // Store the single value.
-            }
-
-            // Case 2: value1 is equal to value2, but not value3
-            else if(value1 == value2 && value1 != value3) {
-                this.values = 2; // This is a 3-node.
-                if(value1 < value3) {
-                    this.value1 = value1; // Store smaller value
-                    this.value2 = value3; // Store larger value
-                } else {
-                    this.value1 = value3; // Store smaller value
-                    this.value2 = value1; // Store larger value
-                }
-
-            // Case 3: value1 is equal to value3, but not value2
-            } else if(value1 == value3 && value1 != value2) {
-                this.values = 2; // This is a 3-node.
-                if(value1 < value2) {
-                    this.value1 = value1; // Store smaller value
-                    this.value2 = value2; // Store larger value
-                } else {
-                    this.value1 = value2; // Store smaller value
-                    this.value2 = value1; // Store larger value
-                }
-
-            // Case 4: value2 is equal to value3, but not value1
-            } else if(value2 == value3 && value1 != value2) {
-                this.values = 2; // This is a 3-node.
-                if(value1 < value2) {
-                    this.value1 = value1; // Store smaller value
-                    this.value2 = value2; // Store larger value
-                } else {
-                    this.value1 = value2; // Store smaller value
-                    this.value2 = value1; // Store larger value    
-                }
-            }
-
-            // Case 5: All values are different.
-            // If none of the values are equal, store them in sorted order.
-            if(value1 < value2 && value1 < value3) {
-                // value1 is the smallest
-                this.values = 3; // This is a 4-node.
-                this.value1 = value1; // Store smallest value
-                // Determine the second smallest and largest values.
-                if(value2 < value3) {
-                    this.value2 = value2; // second smallest value
-                    this.value3 = value3; // largest value
-                } else {
-                    this.value2 = value3; // second smallest value
-                    this.value3 = value2; // largest value   
-                }
-            }
-            // value2 is the smallest value.
-            else if(value2 < value1 && value2 < value3) {
-                this.values = 3; // This is a 4-node.
-                this.value1 = value2; // Store smallest value
-                // Determine the second smallest and largest values.
-                if(value1 < value3) {
-                    this.value2 = value1; // second smallest value
-                    this.value3 = value3; // largest value
-                } else {
-                    this.value2 = value3; // second smallest value
-                    this.value3 = value1; // largest value   
-                }
-            } 
-            // value3 is the smallest value.
-            else {
-                this.values = 3; // This is a 4-node.
-                this.value1 = value3; // Store smallest value
-                // Determine the second smallest and largest values.
-                if(value1 < value2) {
-                    this.value2 = value1; // second smallest value
-                    this.value3 = value2; // largest value
-                } else {
-                    this.value2 = value2; // second smallest value
-                    this.value3 = value1; // largest value   
-                }
-            }
-            
-        }
-
+        // Print indents for tree structure visualization
         private void printIndents(int indent) {
             for(int i = 0; i < indent; i++) System.out.printf("  ");
         }
 
+        // Print the tree in order
         public void printInOrder(int indent) {
             if(!isLeaf && leftChild != null) leftChild.printInOrder(indent + 1);
             printIndents(indent);
@@ -451,7 +352,7 @@ public class TwoFourTree {
             return true;
         } else {
             // Parent is 4-node - would need recursive splitting
-            // System.out.println("DEBUG: Parent is 4-node - recursive splitting not implemented yet");
+            // System.out.println("DEBUG: Parent is 4-node - pre-emptive splitting not implemented yet");
             return false;
         }
     }
@@ -791,63 +692,4 @@ public class TwoFourTree {
             return node.rightChild;
         }
     }
-
-    private void preemptiveSplitPath(int value) {
-        TwoFourTreeItem current = root;
-        
-        // Walk down the tree and split any 4-nodes we encounter
-        while (current != null && !current.isLeaf) {
-            // Determine which child to visit next
-            TwoFourTreeItem nextChild = getNextChild(current, value);
-            
-            // If the next child is a 4-node, split it before descending
-            if (nextChild != null && nextChild.isFourNode()) {
-                System.out.println("DEBUG: Found 4-node on path, splitting before descent");
-                splitNonRootFourNode(nextChild);
-                // After splitting, tree structure changed, so continue from current position
-                continue; // Re-navigate from current node
-            }
-            
-            // Move to next level
-            current = nextChild;
-        }
-    }
-
-    private void splitNonRootFourNode(TwoFourTreeItem fourNode) {
-    System.out.println("DEBUG: Splitting non-root 4-node with values: " + fourNode.value1 + ", " + fourNode.value2 + ", " + fourNode.value3);
-    
-    // Step 1: Get the middle value to promote
-    int promoteValue = fourNode.value2;
-    
-    // Step 2: Create left and right nodes from split
-    TwoFourTreeItem leftNode = new TwoFourTreeItem(fourNode.value1);
-    TwoFourTreeItem rightNode = new TwoFourTreeItem(fourNode.value3);
-    
-    // Step 3: Handle children if this is not a leaf
-    if (!fourNode.isLeaf) {
-        leftNode.isLeaf = false;
-        rightNode.isLeaf = false;
-        
-        // Redistribute children
-        leftNode.leftChild = fourNode.leftChild;
-        leftNode.rightChild = fourNode.centerLeftChild;
-        rightNode.leftChild = fourNode.centerRightChild;
-        rightNode.rightChild = fourNode.rightChild;
-        
-        // Update parent pointers
-        if (leftNode.leftChild != null) leftNode.leftChild.parent = leftNode;
-        if (leftNode.rightChild != null) leftNode.rightChild.parent = leftNode;
-        if (rightNode.leftChild != null) rightNode.leftChild.parent = rightNode;
-        if (rightNode.rightChild != null) rightNode.rightChild.parent = rightNode;
-    }
-    
-    // Step 4: Insert promoted value into parent (guaranteed to have space!)
-    TwoFourTreeItem parent = fourNode.parent;
-    leftNode.parent = parent;
-    rightNode.parent = parent;
-    
-    insertValueIntoParent(parent, promoteValue, leftNode, rightNode, fourNode);
-    
-    System.out.println("DEBUG: Successfully split 4-node, promoted " + promoteValue + " to parent");
-}
 }

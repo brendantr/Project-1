@@ -13,6 +13,8 @@ public class TwoFourTree {
         TwoFourTreeItem centerLeftChild = null;     // center-left and center-right children exist iff the node is a non-leaf 4-node.
         TwoFourTreeItem centerRightChild = null;
 
+        
+        // Methods to determine the type of node.
         public boolean isTwoNode() {
             return false;
         }
@@ -29,6 +31,7 @@ public class TwoFourTree {
             return false;
         }
 
+        // Constructors for the different types of nodes.
         public TwoFourTreeItem(int value1) {
 
         }
@@ -65,8 +68,10 @@ public class TwoFourTree {
         }
     }
 
+    // 
     TwoFourTreeItem root = null;
 
+    // 2-3-4 tree utility functions
     public boolean addValue(int value) {
         return false;
     }
@@ -74,11 +79,12 @@ public class TwoFourTree {
     public boolean hasValue(int value) {
         return false;
     }
-
+    
     public boolean deleteValue(int value) {
         return false;
     }
 
+    // print the tree in order
     public void printInOrder() {
         if(root != null) root.printInOrder(0);
     }
